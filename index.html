@@ -465,6 +465,41 @@ button {
     border-radius: 99px;
 }
 
+/* Specific Table Test Styles */
+.animate-bounce {
+    animation: bounce 2s infinite;
+    margin-bottom: 2rem;
+    font-weight: 300;
+}
+@keyframes bounce {
+    0%, 100% { transform: translateY(-5%); }
+    50% { transform: translateY(0); }
+}
+.specific-number-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.number-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: 1rem;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+.number-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    border-color: var(--tertiary);
+    transform: scale(1.1) rotate(2deg);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .glass-container {
@@ -508,6 +543,10 @@ button {
     .options-grid {
         grid-template-columns: 1fr;
     }
+    
+    .specific-number-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
     </style>
 </head>
@@ -546,7 +585,14 @@ button {
                     <button class="test-start-btn" data-type="tables">Tables Test</button>
                     <button class="test-start-btn" data-type="squares">Squares Test</button>
                     <button class="test-start-btn" data-type="cubes">Cubes Test</button>
+                    <button class="test-start-btn" id="btn-show-specific-table" style="flex-basis: 100%; max-width: 500px; margin-top: 1rem; background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(255,255,255,0.05)); border-color: var(--secondary);">Particular Table Test</button>
                 </div>
+            </div>
+
+            <div id="specific-table-setup" class="hidden" style="text-align: center; padding: 2rem 0;">
+                <h2 class="animate-bounce">Select a Table to Master</h2>
+                <div class="specific-number-grid"></div>
+                <button class="nav-btn" id="btn-back-to-test-setup" style="margin-top: 2.5rem; padding: 1rem 3rem;">Back</button>
             </div>
 
             <div id="test-active" class="hidden">
@@ -610,9 +656,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const testTitle = document.getElementById('test-title');
     const btnReturnSetup = document.getElementById('btn-return-setup');
     const btnNextQuestion = document.getElementById('btn-next-question');
+    const specificTableSetup = document.getElementById('specific-table-setup');
+    const btnShowSpecificTable = document.getElementById('btn-show-specific-table');
+    const btnBackToTestSetup = document.getElementById('btn-back-to-test-setup');
+    const specificNumberGrid = document.querySelector('.specific-number-grid');
     
     // State
     let currentTestMode = null;
+    let selectedSpecificTable = null;
     let questionQueue = [];
     let currentQuestion = null;
     let totalQuestions = 0;
@@ -642,6 +693,30 @@ document.addEventListener('DOMContentLoaded', () => {
     btnNextQuestion.addEventListener('click', () => {
         btnNextQuestion.classList.add('hidden');
         nextQuestion();
+    });
+
+    if (specificNumberGrid) {
+        for(let i=1; i<=20; i++) {
+            let btn = document.createElement('button');
+            btn.className = 'number-btn';
+            btn.textContent = i;
+            btn.style.animation = `fadeIn 0.5s ease-out ${i*0.05}s both`;
+            btn.addEventListener('click', () => {
+                selectedSpecificTable = i;
+                startTest('specific_table');
+            });
+            specificNumberGrid.appendChild(btn);
+        }
+    }
+
+    btnShowSpecificTable.addEventListener('click', () => {
+        testSetup.classList.add('hidden');
+        specificTableSetup.classList.remove('hidden');
+    });
+
+    btnBackToTestSetup.addEventListener('click', () => {
+        specificTableSetup.classList.add('hidden');
+        testSetup.classList.remove('hidden');
     });
 
     // --- Learn Logic ---
@@ -714,6 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
         testSetup.classList.remove('hidden');
         testActive.classList.add('hidden');
         testSummary.classList.add('hidden');
+        specificTableSetup.classList.add('hidden');
     }
 
     startTestBtns.forEach(btn => {
@@ -741,13 +817,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 let i = Math.floor(Math.random() * 19) + 2; // 2 to 20
                 questions.push({ text: `${i}³`, answer: i * i * i, type: 'cubes' });
             }
+        } else if(type === 'specific_table') {
+            for(let k=0; k<15; k++) {
+                let multiplier = Math.floor(Math.random() * 12) + 1; // 1 to 12
+                questions.push({ text: `${selectedSpecificTable} × ${multiplier}`, answer: selectedSpecificTable * multiplier, type: 'tables' });
+            }
         }
         return questions.sort(() => Math.random() - 0.5);
     }
 
     function startTest(type) {
         currentTestMode = type;
-        testTitle.textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' Test';
+        if (type === 'specific_table') {
+            testTitle.textContent = `Table of ${selectedSpecificTable} Test`;
+        } else {
+            testTitle.textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' Test';
+        }
         
         questionQueue = generateQuestions(type);
         initialTotalQuestions = questionQueue.length;
@@ -756,6 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewItems.clear();
         
         testSetup.classList.add('hidden');
+        specificTableSetup.classList.add('hidden');
         testActive.classList.remove('hidden');
         
         updateProgress();
