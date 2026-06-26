@@ -622,10 +622,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Navigation Logic ---
     navBtns.forEach(btn => {
-        if(btn.id === 'btn-return-setup') return; // Handled separately
+        if(btn.id === 'btn-return-setup' || btn.id === 'btn-next-question') return; // Handled separately
         btn.addEventListener('click', () => {
             navBtns.forEach(b => {
-                if(b.id !== 'btn-return-setup') b.classList.remove('active');
+                if(b.id !== 'btn-return-setup' && b.id !== 'btn-next-question') b.classList.remove('active');
             });
             btn.classList.add('active');
             
