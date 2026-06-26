@@ -567,6 +567,7 @@ button {
                 </div>
                 
                 <div id="feedback" class="feedback-msg"></div>
+                <button id="btn-next-question" class="nav-btn hidden" style="margin-top: 1rem;">Next</button>
             </div>
 
             <div id="test-summary" class="hidden">
@@ -608,6 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scoreDisplay = document.getElementById('score-display');
     const testTitle = document.getElementById('test-title');
     const btnReturnSetup = document.getElementById('btn-return-setup');
+    const btnNextQuestion = document.getElementById('btn-next-question');
     
     // State
     let currentTestMode = null;
@@ -635,6 +637,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 resetTestView();
             }
         });
+    });
+
+    btnNextQuestion.addEventListener('click', () => {
+        btnNextQuestion.classList.add('hidden');
+        nextQuestion();
     });
 
     // --- Learn Logic ---
@@ -843,6 +850,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     disableForReducedMotion: true
                 });
             }
+            
+            updateProgress();
+            setTimeout(() => {
+                nextQuestion();
+            }, 500);
         } else {
             btnElement.classList.add('wrong');
             feedbackMsg.textContent = `Incorrect. ${currentQuestion.text} = ${currentQuestion.answer}`;
@@ -859,13 +871,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     b.classList.add('correct');
                 }
             });
+            
+            updateProgress();
+            btnNextQuestion.classList.remove('hidden');
         }
-        
-        updateProgress();
-        
-        setTimeout(() => {
-            nextQuestion();
-        }, 500);
     }
 
     function endTest() {
