@@ -500,6 +500,41 @@ button {
     box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
 }
 
+/* AI Coach Styles */
+.ai-coach-box {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.1));
+    border: 1px solid var(--tertiary);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: none;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeIn 0.4s ease-out;
+}
+.ai-coach-icon {
+    font-size: 2rem;
+    animation: bounce 2s infinite;
+}
+.ai-coach-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e0e7ff;
+}
+
+#btn-next-question {
+    display: block;
+    margin: 1.5rem auto 0;
+    width: 100%;
+    max-width: 300px;
+    padding: 1rem;
+    font-size: 1.2rem;
+    border-radius: 12px;
+}
+#btn-next-question.hidden {
+    display: none !important;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .glass-container {
@@ -541,7 +576,8 @@ button {
     }
 
     .options-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
     }
     
     .specific-number-grid {
@@ -586,6 +622,7 @@ button {
                     <button class="test-start-btn" data-type="squares">Squares Test</button>
                     <button class="test-start-btn" data-type="cubes">Cubes Test</button>
                     <button class="test-start-btn" id="btn-show-specific-table" style="flex-basis: 100%; max-width: 500px; margin-top: 1rem; background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(255,255,255,0.05)); border-color: var(--secondary);">Particular Table Test</button>
+                    <button class="test-start-btn" data-type="ai_smart" style="flex-basis: 100%; max-width: 500px; margin-top: 1rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.2)); border-color: var(--primary); box-shadow: 0 0 15px rgba(99,102,241,0.4);">🤖 AI Smart Training</button>
                 </div>
             </div>
 
@@ -601,6 +638,11 @@ button {
                     <span id="score-display">Score: 0</span>
                 </div>
                 
+                <div id="ai-coach-box" class="ai-coach-box">
+                    <div class="ai-coach-icon">🤖</div>
+                    <div class="ai-coach-text" id="ai-coach-text">Analyzing your performance...</div>
+                </div>
+
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
@@ -664,6 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let currentTestMode = null;
     let selectedSpecificTable = null;
+    let currentStreak = 0;
     let questionQueue = [];
     let currentQuestion = null;
     let totalQuestions = 0;
@@ -822,6 +865,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 let multiplier = Math.floor(Math.random() * 12) + 1; // 1 to 12
                 questions.push({ text: `${selectedSpecificTable} × ${multiplier}`, answer: selectedSpecificTable * multiplier, type: 'tables' });
             }
+        } else if (type === 'ai_smart') {
+            for(let k=0; k<15; k++) {
+                let rand = Math.random();
+                if(rand < 0.5) {
+                    let i = Math.floor(Math.random() * 8) + 12; 
+                    let j = Math.floor(Math.random() * 8) + 5; 
+                    questions.push({ text: `${i} × ${j}`, answer: i * j, type: 'tables' });
+                } else if(rand < 0.75) {
+                    let i = Math.floor(Math.random() * 20) + 11;
+                    questions.push({ text: `${i}²`, answer: i * i, type: 'squares' });
+                } else {
+                    let i = Math.floor(Math.random() * 10) + 11;
+                    questions.push({ text: `${i}³`, answer: i * i * i, type: 'cubes' });
+                }
+            }
         }
         return questions.sort(() => Math.random() - 0.5);
     }
@@ -838,7 +896,16 @@ document.addEventListener('DOMContentLoaded', () => {
         initialTotalQuestions = questionQueue.length;
         totalQuestions = questionQueue.length;
         correctAnswers = 0;
+        currentStreak = 0;
         reviewItems.clear();
+        
+        const aiCoachBox = document.getElementById('ai-coach-box');
+        if(type === 'ai_smart') {
+            aiCoachBox.style.display = 'flex';
+            document.getElementById('ai-coach-text').textContent = "I will adapt the test based on your skills. Let's go!";
+        } else {
+            aiCoachBox.style.display = 'none';
+        }
         
         testSetup.classList.add('hidden');
         specificTableSetup.classList.add('hidden');
@@ -937,6 +1004,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             
+            currentStreak++;
+            if (currentTestMode === 'ai_smart') {
+                const aiText = document.getElementById('ai-coach-text');
+                if (currentStreak === 2) aiText.textContent = "Great streak! You're warming up!";
+                if (currentStreak === 5) aiText.textContent = "Unstoppable! You are a Math Genius!";
+            }
+            
             updateProgress();
             setTimeout(() => {
                 nextQuestion();
@@ -945,6 +1019,11 @@ document.addEventListener('DOMContentLoaded', () => {
             btnElement.classList.add('wrong');
             feedbackMsg.textContent = `Incorrect. ${currentQuestion.text} = ${currentQuestion.answer}`;
             feedbackMsg.classList.add('wrong-text');
+            
+            currentStreak = 0;
+            if (currentTestMode === 'ai_smart') {
+                document.getElementById('ai-coach-text').textContent = `Don't worry! I've noted that ${currentQuestion.text} is tricky for you.`;
+            }
             
             let insertIndex = Math.min(questionQueue.length, 3);
             questionQueue.splice(insertIndex, 0, currentQuestion);
