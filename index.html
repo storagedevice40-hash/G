@@ -1096,23 +1096,33 @@ document.addEventListener('DOMContentLoaded', () => {
             currentStreak++;
             const aiText = document.getElementById('ai-coach-text');
             if (currentTestMode === 'unlimited_ai') {
+                let reactionTime = parseFloat(((performance.now() - questionStartTime) / 1000).toFixed(1));
                 if (correctAnswers > 0 && correctAnswers % 10 === 0) {
                     currentLevel++;
                     document.getElementById('level-display').textContent = `Level: ${currentLevel}`;
                     aiText.textContent = `LEVEL UP! You are now Level ${currentLevel}. Prepare for harder questions!`;
+                } else if (reactionTime > 4.0) {
+                    aiText.textContent = `Correct, but slow (${reactionTime}s)! Repeating this later for speed.`;
+                    let qCopy = JSON.parse(JSON.stringify(currentQuestion));
+                    questionQueue.splice(4, 0, qCopy);
+                    totalQuestions += 1;
                 } else if (currentStreak === 3) {
                     aiText.textContent = "On fire! Keep it going!";
                 } else if (currentStreak === 7) {
                     aiText.textContent = "Godlike streak! I'm impressed!";
                 }
             } else if (currentTestMode === 'specific_table_fast') {
-                let reactionTime = ((performance.now() - questionStartTime) / 1000).toFixed(1);
+                let reactionTime = parseFloat(((performance.now() - questionStartTime) / 1000).toFixed(1));
                 if (reactionTime < 1.0) {
                     aiText.textContent = `⚡ SUPERHUMAN SPEED! (${reactionTime}s)`;
-                } else if (reactionTime < 2.5) {
+                } else if (reactionTime < 3.0) {
                     aiText.textContent = `⚡ Great speed! (${reactionTime}s)`;
                 } else {
-                    aiText.textContent = `⚡ Correct! Try to beat ${reactionTime}s next!`;
+                    aiText.textContent = `⚡ Correct, but slow (${reactionTime}s). Memorize it!`;
+                    // Push to queue for speed training
+                    let qCopy = JSON.parse(JSON.stringify(currentQuestion));
+                    questionQueue.splice(3, 0, qCopy);
+                    totalQuestions += 1;
                 }
             } else if (currentTestMode === 'ai_smart') {
                 if (currentStreak === 2) aiText.textContent = "Great streak! You're warming up!";
