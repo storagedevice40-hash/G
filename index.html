@@ -535,6 +535,34 @@ button {
     display: none !important;
 }
 
+/* Fast Mode Aesthetics */
+body.fast-mode {
+    background: linear-gradient(135deg, #09090b 0%, #171717 100%);
+}
+body.fast-mode .glass-container {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #10b981;
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+}
+body.fast-mode h1, body.fast-mode h2, body.fast-mode h3 {
+    color: #10b981;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+body.fast-mode .option-btn {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: #10b981;
+    color: #fff;
+}
+body.fast-mode .option-btn:hover {
+    background: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    transform: scale(1.05);
+}
+body.fast-mode .ai-coach-box {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .glass-container {
@@ -629,6 +657,12 @@ button {
 
             <div id="specific-table-setup" class="hidden" style="text-align: center; padding: 2rem 0;">
                 <h2 class="animate-bounce">Select a Table to Master</h2>
+                <div style="margin-bottom: 2rem; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 12px; display: inline-block;">
+                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 1.1rem; color: #10b981; font-weight: bold;">
+                        <input type="checkbox" id="toggle-fast-memorize" style="width: 1.5rem; height: 1.5rem; accent-color: #10b981;">
+                        ⚡ Enable AI Fast Memorize Mode (No Animations, Spaced Repetition)
+                    </label>
+                </div>
                 <div class="specific-number-grid"></div>
                 <button class="nav-btn" id="btn-back-to-test-setup" style="margin-top: 2.5rem; padding: 1rem 3rem;">Back</button>
             </div>
@@ -714,6 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentLevel = 1;
     let questionQueue = [];
     let currentQuestion = null;
+    let questionStartTime = 0;
     let totalQuestions = 0;
     let initialTotalQuestions = 0;
     let correctAnswers = 0;
@@ -751,7 +786,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.animation = `fadeIn 0.5s ease-out ${i*0.05}s both`;
             btn.addEventListener('click', () => {
                 selectedSpecificTable = i;
-                startTest('specific_table');
+                const isFastMode = document.getElementById('toggle-fast-memorize').checked;
+                startTest(isFastMode ? 'specific_table_fast' : 'specific_table');
             });
             specificNumberGrid.appendChild(btn);
         }
@@ -865,7 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let i = Math.floor(Math.random() * 19) + 2; // 2 to 20
                 questions.push({ text: `${i}³`, answer: i * i * i, type: 'cubes' });
             }
-        } else if(type === 'specific_table') {
+        } else if(type === 'specific_table' || type === 'specific_table_fast') {
             for(let k=0; k<15; k++) {
                 let multiplier = Math.floor(Math.random() * 12) + 1; // 1 to 12
                 questions.push({ text: `${selectedSpecificTable} × ${multiplier}`, answer: selectedSpecificTable * multiplier, type: 'tables' });
@@ -905,10 +941,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startTest(type) {
         currentTestMode = type;
-        if (type === 'specific_table') {
+        if (type === 'specific_table' || type === 'specific_table_fast') {
             testTitle.textContent = `Table of ${selectedSpecificTable} Test`;
         } else {
             testTitle.textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' Test';
+        }
+        
+        if (type === 'specific_table_fast') {
+            document.body.classList.add('fast-mode');
+        } else {
+            document.body.classList.remove('fast-mode');
         }
         
         questionQueue = generateQuestions(type);
@@ -928,6 +970,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('ai-coach-text').textContent = "Endless mode! I will increase the difficulty as you level up. Let's go!";
             levelDisplay.classList.remove('hidden');
             levelDisplay.textContent = `Level: ${currentLevel}`;
+            progressBar.classList.add('hidden');
+        } else if(type === 'specific_table_fast') {
+            aiCoachBox.style.display = 'flex';
+            document.getElementById('ai-coach-text').textContent = "⚡ FAST MEMORIZE MODE ACTIVE. Answer as fast as possible!";
+            levelDisplay.classList.add('hidden');
             progressBar.classList.add('hidden');
         } else if(type === 'ai_smart') {
             aiCoachBox.style.display = 'flex';
@@ -992,6 +1039,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(questionQueue.length === 0) {
             if (currentTestMode === 'unlimited_ai') {
                 questionQueue = generateQuestions('unlimited_ai');
+            } else if (currentTestMode === 'specific_table_fast') {
+                questionQueue = generateQuestions('specific_table_fast');
             } else {
                 endTest();
                 return;
@@ -1014,6 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         feedbackMsg.textContent = '';
         feedbackMsg.className = 'feedback-msg';
+        questionStartTime = performance.now();
     }
 
     function handleAnswer(selectedAnswer, btnElement) {
@@ -1026,19 +1076,21 @@ document.addEventListener('DOMContentLoaded', () => {
             feedbackMsg.classList.add('correct-text');
             correctAnswers++;
             
-            if (typeof confetti === 'function') {
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6, x: 0 },
-                    disableForReducedMotion: true
-                });
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6, x: 1 },
-                    disableForReducedMotion: true
-                });
+            if (currentTestMode !== 'specific_table_fast') {
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6, x: 0 },
+                        disableForReducedMotion: true
+                    });
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6, x: 1 },
+                        disableForReducedMotion: true
+                    });
+                }
             }
             
             currentStreak++;
@@ -1053,15 +1105,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (currentStreak === 7) {
                     aiText.textContent = "Godlike streak! I'm impressed!";
                 }
+            } else if (currentTestMode === 'specific_table_fast') {
+                let reactionTime = ((performance.now() - questionStartTime) / 1000).toFixed(1);
+                if (reactionTime < 1.0) {
+                    aiText.textContent = `⚡ SUPERHUMAN SPEED! (${reactionTime}s)`;
+                } else if (reactionTime < 2.5) {
+                    aiText.textContent = `⚡ Great speed! (${reactionTime}s)`;
+                } else {
+                    aiText.textContent = `⚡ Correct! Try to beat ${reactionTime}s next!`;
+                }
             } else if (currentTestMode === 'ai_smart') {
                 if (currentStreak === 2) aiText.textContent = "Great streak! You're warming up!";
                 if (currentStreak === 5) aiText.textContent = "Unstoppable! You are a Math Genius!";
             }
             
             updateProgress();
-            setTimeout(() => {
+            
+            if (currentTestMode === 'specific_table_fast') {
                 nextQuestion();
-            }, 500);
+            } else {
+                setTimeout(() => {
+                    nextQuestion();
+                }, 500);
+            }
         } else {
             btnElement.classList.add('wrong');
             feedbackMsg.textContent = `Incorrect. ${currentQuestion.text} = ${currentQuestion.answer}`;
@@ -1070,13 +1136,23 @@ document.addEventListener('DOMContentLoaded', () => {
             currentStreak = 0;
             if (currentTestMode === 'unlimited_ai') {
                 document.getElementById('ai-coach-text').textContent = `Ouch! Let's learn from this. ${currentQuestion.text} = ${currentQuestion.answer}`;
+            } else if (currentTestMode === 'specific_table_fast') {
+                document.getElementById('ai-coach-text').textContent = `⚡ FOCUS! ${currentQuestion.text} = ${currentQuestion.answer}. Memorize this!`;
             } else if (currentTestMode === 'ai_smart') {
                 document.getElementById('ai-coach-text').textContent = `Don't worry! I've noted that ${currentQuestion.text} is tricky for you.`;
             }
             
-            let insertIndex = Math.min(questionQueue.length, 3);
-            questionQueue.splice(insertIndex, 0, currentQuestion);
-            totalQuestions++;
+            if (currentTestMode === 'specific_table_fast') {
+                // Ask again after 2 different questions, and then after 4 more
+                let qCopy = JSON.parse(JSON.stringify(currentQuestion));
+                questionQueue.splice(2, 0, qCopy);
+                questionQueue.splice(6, 0, qCopy);
+                totalQuestions += 2;
+            } else {
+                let insertIndex = Math.min(questionQueue.length, 3);
+                questionQueue.splice(insertIndex, 0, currentQuestion);
+                totalQuestions++;
+            }
             
             reviewItems.add(`${currentQuestion.text} = ${currentQuestion.answer}`);
             
@@ -1087,6 +1163,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             updateProgress();
+            
+            // Always show next button when wrong so user can review the answer
             btnNextQuestion.classList.remove('hidden');
         }
     }
